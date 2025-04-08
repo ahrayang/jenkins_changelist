@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Commits Automation",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/commits_automation.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}
