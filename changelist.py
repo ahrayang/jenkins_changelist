@@ -85,7 +85,7 @@ def parse_describe(change_num):
     return info
 
 def append_to_excel(data_list, excel_file="build_history.xlsx"):
-    columns = ["Change 번호", "서밋 시점 (KST)", "작업자", "설명", "Jira URL", "Diff 내용"]
+    columns = ["Change 번호", "날짜", "시간", "작업자", "설명", "Jira URL", "Diff 내용"]
     df_new = pd.DataFrame(data_list, columns=columns)
     if os.path.exists(excel_file):
         try:
@@ -107,7 +107,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--since", type=str, required=False)
     parser.add_argument("--until", type=str, required=False)
-    parser.add_argument("--depot", type=str, default='//Sol/Dev1Next/...') # 저장소 경로로
+    parser.add_argument("--depot", type=str, default='//Sol/Dev1Next/...') # 저장소 경로
     args = parser.parse_args()
     if not args.since or not args.until:
         now = datetime.now()
@@ -120,9 +120,11 @@ def main():
         info = parse_describe(change)
         if info:
             info["submit_time"] = utc_to_kst(info["submit_time"])
+            date_part, time_part = info["submit_time"].split(" ")
             collected_data.append({
                 "Change 번호": info["change"],
-                "서밋 시점 (KST)": info["submit_time"],
+                "날짜": date_part,
+                "시간": time_part,
                 "작업자": info["user"],
                 "설명": info["description"],
                 "Jira URL": info["jira_url"],
