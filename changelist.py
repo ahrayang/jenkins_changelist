@@ -1,3 +1,4 @@
+
 import argparse
 import subprocess
 import re
@@ -107,7 +108,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--since", type=str, required=False)
     parser.add_argument("--until", type=str, required=False)
-    parser.add_argument("--depot", type=str, default='//Sol/Dev1Next/...') # 저장소 경로
+    parser.add_argument("--depot", type=str, default='//Sol/Dev1Next/...')
     args = parser.parse_args()
     if not args.since or not args.until:
         now = datetime.now()
@@ -119,8 +120,11 @@ def main():
     for change in changes:
         info = parse_describe(change)
         if info:
-            info["submit_time"] = utc_to_kst(info["submit_time"])
-            date_part, time_part = info["submit_time"].split(" ")
+            converted = utc_to_kst(info["submit_time"])
+            if " " in converted:
+                date_part, time_part = converted.split(" ")
+            else:
+                date_part, time_part = converted, ""
             collected_data.append({
                 "Change 번호": info["change"],
                 "날짜": date_part,
