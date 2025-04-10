@@ -5,7 +5,7 @@
             "name": "Run Commits Automation",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/commits_automation.py",
+            "program": "${workspaceFolder}/changelist.py",
             "console": "integratedTerminal"
         }
     ]
