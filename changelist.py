@@ -6,6 +6,10 @@ import pandas as pd
 import os
 import logging
 from datetime import datetime, timedelta
+from collections import defaultdict
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font
 
 def utc_to_kst(utc_str):
     try:
@@ -40,27 +44,28 @@ def get_changes(depot, since, until):
             changes.append(change_num)
     return changes
 
-def parse_describe(change_num):
+def parse_describe_grouped(change_num):
     cmd = f"p4 describe -s {change_num}"
     output = run_command(cmd)
     if not output:
-        return None
-    info = {"change": change_num, "submit_time": "", "user": "", "description": "", "jira_url": "", "diff_summary": ""}
+        return []
     lines = output.splitlines()
     header_pattern = re.compile(r"^Change\s+\d+\s+by\s+(\S+)@.*\s+on\s+(\d{4}/\d{2}/\d{2}(?:\s+\d{2}:\d{2}:\d{2})?)")
     header_found = False
     description_lines = []
-    affected_files = []
     in_affected = False
+    action_to_files = defaultdict(list)
+    user, submit_time = "", ""
+
     for line in lines:
         if not header_found:
             m = re.search(header_pattern, line.strip())
             if m:
-                info["user"] = m.group(1)
-                info["submit_time"] = m.group(2)
+                user = m.group(1)
+                submit_time = m.group(2)
+                if " " not in submit_time:
+                    submit_time += " 00:00:00"
                 header_found = True
-                if " " not in info["submit_time"]:
-                    info["submit_time"] += " 00:00:00"
             continue
         if not in_affected:
             if "Affected files" in line:
@@ -76,32 +81,66 @@ def parse_describe(change_num):
                 depot_path = m.group(1)
                 action = m.group(2)
                 file_name = os.path.basename(depot_path)
-                _, ext = os.path.splitext(file_name)
-                file_info = f"File: {file_name}, Action: {action}, Type: {ext if ext else 'N/A'}"
-                affected_files.append(file_info)
-    info["description"] = "\n".join(description_lines).strip()
-    jira_match = re.search(r'(https?://\S+(?:atlassian\.net\S+))', info["description"])
-    info["jira_url"] = jira_match.group(1) if jira_match else ""
-    info["diff_summary"] = "; ".join(affected_files)
-    return info
+                action_to_files[action].append(file_name)
 
-def append_to_excel(data_list, excel_file="build_history.xlsx"):
-    columns = ["Change 번호", "날짜", "시간", "작업자", "설명", "Jira URL", "Diff 내용"]
-    df_new = pd.DataFrame(data_list, columns=columns)
-    if os.path.exists(excel_file):
-        try:
-            df_existing = pd.read_excel(excel_file)
-            df_total = pd.concat([df_existing, df_new], ignore_index=True)
-        except Exception as e:
-            logging.error("Excel 파일 읽기 오류: " + str(e))
-            df_total = df_new
-    else:
-        df_total = df_new
-    try:
-        df_total.to_excel(excel_file, index=False)
-        logging.info(f"Data saved to {excel_file}")
-    except Exception as e:
-        logging.error("Excel 쓰기 오류: " + str(e))
+    description = "\n".join(description_lines).strip()
+    jira_urls = re.findall(r'(https?://\S+atlassian\.net\S+)', description)
+    jira_combined = ", ".join(jira_urls)
+
+    converted = utc_to_kst(submit_time)
+    date_part, time_part = converted.split(" ") if " " in converted else (converted, "")
+
+    if user.lower().startswith("jenkins"):
+        return []
+
+    rows = []
+    for action, files in action_to_files.items():
+        rows.append({
+            "Change 번호": change_num,
+            "날짜": date_part,
+            "시간": time_part,
+            "작업자": user,
+            "설명": description,
+            "Action": action,
+            "File": ", ".join(files),
+            "Jira URL": jira_combined
+        })
+    return rows
+
+def append_to_excel_with_hyperlink(data_list, excel_file="build_history_final.xlsx"):
+    columns = ["Change 번호", "날짜", "시간", "작업자", "설명", "Action", "File", "Jira URL"]
+    df = pd.DataFrame(data_list, columns=columns)
+    df.to_excel(excel_file, index=False)
+
+    wb = load_workbook(excel_file)
+    ws = wb.active
+
+    jira_col_index = None
+    for idx, cell in enumerate(ws[1], start=1):
+        if cell.value == "Jira URL":
+            jira_col_index = idx
+            break
+
+    if jira_col_index:
+        for row in ws.iter_rows(min_row=2):
+            cell = row[jira_col_index - 1]
+            if cell.value:
+                urls = re.findall(r"https?://\S+atlassian\.net\S*", cell.value)
+                if urls:
+                    first_url = urls[0]
+                    cell.hyperlink = first_url
+                    cell.font = Font(color="0000FF", underline="single")
+
+    max_width = 90
+    for col in ws.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            if cell.value:
+                max_len = max(max_len, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = min(max_len + 2, max_width)
+
+    wb.save(excel_file)
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -118,24 +157,10 @@ def main():
     changes = get_changes(args.depot, args.since, args.until)
     collected_data = []
     for change in changes:
-        info = parse_describe(change)
-        if info:
-            converted = utc_to_kst(info["submit_time"])
-            if " " in converted:
-                date_part, time_part = converted.split(" ")
-            else:
-                date_part, time_part = converted, ""
-            collected_data.append({
-                "Change 번호": info["change"],
-                "날짜": date_part,
-                "시간": time_part,
-                "작업자": info["user"],
-                "설명": info["description"],
-                "Jira URL": info["jira_url"],
-                "Diff 내용": info["diff_summary"]
-            })
+        rows = parse_describe_grouped(change)
+        collected_data.extend(rows)
     if collected_data:
-        append_to_excel(collected_data)
+        append_to_excel_with_hyperlink(collected_data)
     else:
         logging.info("추가할 데이터가 없습니다.")
 
