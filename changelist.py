@@ -107,7 +107,7 @@ def parse_describe_grouped(change_num):
         })
     return rows
 
-def append_to_excel_with_hyperlink(data_list, excel_file="build_history_final.xlsx"):
+def append_to_excel_with_hyperlink(data_list, excel_file="build_history_final.xlsx"): # 나중에는 * 처리리
     columns = ["Change 번호", "날짜", "시간", "작업자", "설명", "Action", "File", "Jira URL"]
     df = pd.DataFrame(data_list, columns=columns)
     df.to_excel(excel_file, index=False)
@@ -147,7 +147,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--since", type=str, required=False)
     parser.add_argument("--until", type=str, required=False)
-    parser.add_argument("--depot", type=str, default='//Sol/Dev1Next/...')
+    parser.add_argument("--depot", type=str, default='//Sol/Dev1Next/...') #dev1과 dev1next를 시트 분리하여 보여줘야 할지?
     args = parser.parse_args()
     if not args.since or not args.until:
         now = datetime.now()
