@@ -75,9 +75,9 @@ def parse_describe(change_num):
             if m:
                 depot_path = m.group(1)
                 action = m.group(2)
-                folder, file_name = os.path.split(depot_path)
+                file_name = os.path.basename(depot_path)
                 _, ext = os.path.splitext(file_name)
-                file_info = f"File: {file_name}, Action: {action}, Type: {ext if ext else 'N/A'}, In Folder: {folder}"
+                file_info = f"File: {file_name}, Action: {action}, Type: {ext if ext else 'N/A'}"
                 affected_files.append(file_info)
     info["description"] = "\n".join(description_lines).strip()
     jira_match = re.search(r'(https?://\S+(?:atlassian\.net\S+))', info["description"])
@@ -112,7 +112,7 @@ def main():
     args = parser.parse_args()
     if not args.since or not args.until:
         now = datetime.now()
-        daterange = now - timedelta(days=7)
+        daterange = now - timedelta(days=1)
         args.since = daterange.strftime("%Y/%m/%d:%H:%M:%S")
         args.until = now.strftime("%Y/%m/%d:%H:%M:%S")
     changes = get_changes(args.depot, args.since, args.until)
