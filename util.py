@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
-def utc_to_kst(utc_str):
+def utc_to_kst(utc_str): #utc를 kst로 바꿔주는 함수
     try:
         dt_utc = datetime.strptime(utc_str, "%Y/%m/%d %H:%M:%S")
         dt_kst = dt_utc + timedelta(hours=9)
@@ -18,7 +18,7 @@ def utc_to_kst(utc_str):
         logging.error(f"utc -> kst 변환 실패: {e}")
         return utc_str
 
-def run_command(cmd):
+def run_command(cmd): # 백그라운드 CMD 실행해주는 함수
     logging.info(f"[CMD 실행]: {cmd}")
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
@@ -28,7 +28,7 @@ def run_command(cmd):
         logging.error(f"[CMD 실행 실패]: {e.stderr}")
         return ""
 
-def get_changes(depot, since, until):
+def get_changes(depot, since, until): # change range 조회하는 문법
     cmd = f'p4 changes {depot}@{since},{until}'
     logging.info(f"cmd 전송: {cmd}")
     output = run_command(cmd)
@@ -42,7 +42,7 @@ def get_changes(depot, since, until):
             changes.append(change_num)
     return changes
 
-def parse_describe_grouped(change_num):
+def parse_describe_grouped(change_num): # 규칙에 맞게 parser
     cmd = f"p4 describe -s {change_num}"
     output = run_command(cmd)
     if not output:
@@ -105,7 +105,7 @@ def parse_describe_grouped(change_num):
         })
     return rows
 
-def append_to_excel_with_hyperlink(data_list, excel_file="build_history.xlsx"): # 나중에는 * 처리리
+def append_to_excel_with_hyperlink(data_list, excel_file="build_history.xlsx"): # 엑셀에 쓰는 규칙
     columns = ["Change 번호", "날짜", "시간", "작업자", "설명", "Action", "File", "Jira URL"]
     df = pd.DataFrame(data_list, columns=columns)
     df.to_excel(excel_file, index=False)
