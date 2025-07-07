@@ -14,7 +14,7 @@ def main():
     args = parser.parse_args()
     if not args.since or not args.until:
         now = datetime.now()
-        daterange = now - timedelta(days=3)
+        daterange = now - timedelta(days=10)
         args.since = daterange.strftime("%Y/%m/%d:%H:%M:%S")
         args.until = now.strftime("%Y/%m/%d:%H:%M:%S")
     changes = util.get_changes(args.depot, args.since, args.until)

@@ -105,7 +105,7 @@ def parse_describe_grouped(change_num):
         })
     return rows
 
-def append_to_excel_with_hyperlink(data_list, excel_file="build_history_final.xlsx"): # 나중에는 * 처리리
+def append_to_excel_with_hyperlink(data_list, excel_file="build_history.xlsx"): # 나중에는 * 처리리
     columns = ["Change 번호", "날짜", "시간", "작업자", "설명", "Action", "File", "Jira URL"]
     df = pd.DataFrame(data_list, columns=columns)
     df.to_excel(excel_file, index=False)
