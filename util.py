@@ -19,10 +19,10 @@ def utc_to_kst(utc_str): #utc를 kst로 바꿔주는 함수
         return utc_str
 
 def run_command(cmd): # 백그라운드 CMD 실행해주는 함수
-    logging.info(f"[CMD 실행]: {cmd}")
+    logging.debug(f"[CMD 실행]: {cmd}")
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
-        logging.info(f"[CMD 결과]:\n{result.stdout}")
+        logging.debug(f"[CMD 결과]:\n{result.stdout}")
         return result.stdout
     except subprocess.CalledProcessError as e:
         logging.error(f"[CMD 실행 실패]: {e.stderr}")
@@ -30,7 +30,7 @@ def run_command(cmd): # 백그라운드 CMD 실행해주는 함수
 
 def get_changes(depot, since, until): # change range 조회하는 문법
     cmd = f'p4 changes {depot}@{since},{until}'
-    logging.info(f"cmd 전송: {cmd}")
+    logging.debug(f"cmd 전송: {cmd}")
     output = run_command(cmd)
     changes = []
     pattern = re.compile(r"^Change\s+(\d+)\s+on\s+(\d{4}/\d{2}/\d{2}(?:\s+\d{2}:\d{2}:\d{2})?)\s+by\s+(\S+)")

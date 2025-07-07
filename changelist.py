@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(level=logging.debug, format="%(asctime)s - %(levelname)s - %(message)s")
     parser = argparse.ArgumentParser()
     parser.add_argument("--since", type=str, required=False)
     parser.add_argument("--until", type=str, required=False)
@@ -25,7 +25,7 @@ def main():
     if collected_data:
         util.append_to_excel_with_hyperlink(collected_data)
     else:
-        logging.info("추가할 데이터가 없습니다.")
+        logging.debug("추가할 데이터가 없습니다.")
 
 if __name__ == "__main__":
     main()
