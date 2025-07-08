@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 
 def main():
-    logging.basicConfig(level=logging.debug, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
     parser = argparse.ArgumentParser()
     parser.add_argument("--since", type=str, required=False)
     parser.add_argument("--until", type=str, required=False)
